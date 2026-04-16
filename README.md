@@ -1,7 +1,7 @@
 # BLETroller 📱
 ### A TrollStore app for sending Apple Continuity and Proximity BLE requests
 
-BLETroller lets you spoof and send Apple Proximity and Continuity BLE signals to other iDevices by using private CoreBluetooth frameworks. This is what people used on Flipper Zeros to crash iDevices running iOS versions earlier than 17.2 back in 2023.
+BLETroller lets you spoof and send Apple Proximity and Continuity BLE signals to other iDevices by using private CoreBluetooth frameworks. This is the protocol that people used on Flipper Zeros to crash iDevices running iOS versions earlier than 17.2 back in 2023. 
 
 ---
 
