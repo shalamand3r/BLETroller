@@ -11,7 +11,7 @@ BLETroller lets you spoof and send Apple Proximity and Continuity BLE signals to
       <img src="https://github.com/shalamand3r/BLETroller/blob/main/BLETroller.png" width="300">
     </td>
     <td align="center">
-      <img src="https://github.com/shalamand3r/BLETroller/blob/main/AppSS.png" width="300">
+      <img src="https://github.com/shalamand3r/BLETroller/blob/main/AppSS.jpeg" width="300">
     </td>
   </tr>
 </table>
