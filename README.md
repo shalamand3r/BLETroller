@@ -27,4 +27,4 @@ Download the latest version from **[Releases](https://github.com/shalamand3r/BLE
 
 ###### Note: The bundle identifier for this app is com.apple.sharingd because iOS only allows some system processes to broadcast payloads that involve continuity. Idk what the consequences of installing an app w/ this bundle id will be, so use this @ your own risk!!!!
 
-to do: ~~fix container access,~~ fix other payloads, make work on other ios versions??? publish source code LOL
+to do: ~~fix container access,~~ fix other payloads, add payloads for other OSes (?), make work on other ios versions??? publish source code LOL
