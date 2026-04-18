@@ -22,13 +22,13 @@ BLETroller lets you spoof and send Apple Proximity and Continuity BLE signals to
 ## Usage
 
 - **Different Payloads** → Includes payloads for ~~AirPods, Beats, AirTags,~~ Apple TV, and more.
-- **Stealth Mode** → Blacks out your screen during active broadcasting. Activate by holding the broadcast button; exit by triple-tapping the screen.
-- **Console** → A console is included. It makes this app look cool. Useful for logging IDK. Now can show detected BT devices nearby so you have an idea of how many people you can annoy.
+- **Stealth Mode** → Hide your screen during active broadcasting. Exit by triple-tapping the screen.
+- **BT Radar** → Shows detected BT devices nearby, so you have an idea of how many people you can annoy. Only partially supported on older hardware (such as iPhone 6s/7).
 
 Download the latest version from **[Releases](https://github.com/shalamand3r/BLETroller/releases)**
 
 ---
 
-###### Note: The bundle identifier for this app is com.apple.sharingd because iOS only allows some system processes to broadcast payloads that involve continuity. Idk what the consequences of installing an app w/ this bundle id will be, so use this @ your own risk!!!!
+###### Note: The bundle identifier for this app is com.apple.sharingd because iOS only allows some system processes to broadcast BLE advertisements (like when you reset your iDevice, it wil broadcast an advertisement prompting nearby devices to set it up). Idk what the consequences of installing an app w/ this bundle id will be, so use this @ your own risk!!!!
 
 to do: ~~fix container access,~~ fix other payloads, add payloads for other OSes (?), make work on other ios versions??? publish source code LOL
