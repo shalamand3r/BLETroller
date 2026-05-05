@@ -32,3 +32,13 @@ Download the latest version from **[Releases](https://github.com/shalamand3r/BLE
 ###### Note: The bundle identifier for this app is com.apple.sharingd because iOS only allows some system processes to broadcast BLE advertisements (like when you reset your iDevice, it wil broadcast an advertisement prompting nearby devices to set it up). Idk what the consequences of installing an app w/ this bundle id will be, so use this @ your own risk!!!!
 
 to do: ~~fix container access,~~ fix other payloads, add payloads for other OSes (?), make work on other ios versions??? publish source code LOL
+
+---
+
+<p align="center">
+  <a href="https://github.com/shalamand3r/BLETroller/releases">
+    <img src="https://img.shields.io/github/downloads/shalamand3r/LiveSafariReborn/total?style=plastic&logo=github&label=Downloads&color=7aaada">
+  </a>
+</p>
+
+
