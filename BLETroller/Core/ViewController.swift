@@ -93,6 +93,7 @@ final class StealthModeAlertViewController: UIViewController {
 
 final class AppleTVWarningViewController: UIViewController {
     var onDismiss: (() -> Void)?
+    var onCancel: (() -> Void)?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -142,19 +143,43 @@ final class AppleTVWarningViewController: UIViewController {
         gotItBtn.addTarget(self, action: #selector(dismissSelf), for: .touchUpInside)
         stack.addArrangedSubview(gotItBtn)
 
+        var cancelCfg = UIButton.Configuration.gray()
+        cancelCfg.title = "Go Back"
+        cancelCfg.cornerStyle = .large
+        cancelCfg.buttonSize = .large
+        cancelCfg.baseForegroundColor = .secondaryLabel
+        cancelCfg.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+            var out = incoming
+            out.font = .systemFont(ofSize: 18, weight: .bold)
+            return out
+        }
+
+        let cancelBtn = UIButton(type: .system)
+        cancelBtn.configuration = cancelCfg
+        cancelBtn.addTarget(self, action: #selector(cancelSelf), for: .touchUpInside)
+        stack.addArrangedSubview(cancelBtn)
+
         NSLayoutConstraint.activate([
             stack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             stack.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             stack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 32),
             stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -32),
             gotItBtn.widthAnchor.constraint(equalTo: stack.widthAnchor),
-            gotItBtn.heightAnchor.constraint(equalToConstant: 60)
+            gotItBtn.heightAnchor.constraint(equalToConstant: 60),
+            cancelBtn.widthAnchor.constraint(equalTo: stack.widthAnchor),
+            cancelBtn.heightAnchor.constraint(equalToConstant: 60)
         ])
     }
 
     @objc private func dismissSelf() {
         dismiss(animated: true) { [weak self] in
             self?.onDismiss?()
+        }
+    }
+
+    @objc private func cancelSelf() {
+        dismiss(animated: true) { [weak self] in
+            self?.onCancel?()
         }
     }
 }
@@ -186,8 +211,8 @@ final class ViewController: UIViewController, UITextViewDelegate, UIContextMenuI
     private let radarStatusLabel = UILabel()
     private let radarPillButton = UIButton(type: .custom)
     private let logTogglePill = UIVisualEffectView(effect: UIBlurEffect(style: .systemMaterial))
-    private let logStealthPill = UIVisualEffectView(effect: UIBlurEffect(style: .systemMaterial))
-    private let logStealthButton = UIButton(type: .system)
+    private var lastStealthSwipeDirection: UISwipeGestureRecognizer.Direction = .left
+    private var panStartDirection: UISwipeGestureRecognizer.Direction?
     private var radarPillStackLeadingConstraint: NSLayoutConstraint?
     private var radarPillStackTrailingConstraint: NSLayoutConstraint?
     private var scannerPillCollapseTimer: Timer?
@@ -349,27 +374,8 @@ final class ViewController: UIViewController, UITextViewDelegate, UIContextMenuI
 
         logContainer.contentView.bringSubviewToFront(logTogglePill)
 
-        logStealthPill.effect = pillBlur
-        logStealthPill.layer.cornerRadius = 16
-        logStealthPill.layer.cornerCurve = .continuous
-        logStealthPill.clipsToBounds = true
-        logStealthPill.translatesAutoresizingMaskIntoConstraints = false
-        logStealthPill.contentView.backgroundColor = UIColor.tertiarySystemFill.withAlphaComponent(0.15)
-        logContainer.contentView.addSubview(logStealthPill)
-
-        logStealthButton.tintColor = .secondaryLabel
-        let stealthCfg = UIImage.SymbolConfiguration(pointSize: 15, weight: .semibold)
-        logStealthButton.setImage(UIImage(systemName: "eye.slash.fill", withConfiguration: stealthCfg), for: .normal)
-        logStealthButton.translatesAutoresizingMaskIntoConstraints = false
-        logStealthButton.addTarget(self, action: #selector(handleStealthPillTapped), for: .touchUpInside)
-        logStealthPill.contentView.addSubview(logStealthButton)
-
-        NSLayoutConstraint.activate([
-            logStealthButton.centerXAnchor.constraint(equalTo: logStealthPill.contentView.centerXAnchor),
-            logStealthButton.centerYAnchor.constraint(equalTo: logStealthPill.contentView.centerYAnchor),
-            logStealthPill.widthAnchor.constraint(equalToConstant: 44),
-            logStealthPill.heightAnchor.constraint(equalToConstant: 32),
-        ])
+        let stealthPan = UIPanGestureRecognizer(target: self, action: #selector(handleStealthPan(_:)))
+        view.addGestureRecognizer(stealthPan)
 
         var selCfg = UIButton.Configuration.gray()
         selCfg.title = selectedDevice["name"] as? String
@@ -474,18 +480,10 @@ final class ViewController: UIViewController, UITextViewDelegate, UIContextMenuI
             leading,
             trailing,
 
-            logStealthPill.trailingAnchor.constraint(equalTo: logContainer.contentView.trailingAnchor, constant: -10),
-            logStealthPill.bottomAnchor.constraint(equalTo: logContainer.contentView.bottomAnchor, constant: -10),
-
             consoleTextView.topAnchor.constraint(equalTo: logContainer.contentView.topAnchor, constant: 12),
             consoleTextView.bottomAnchor.constraint(equalTo: logContainer.contentView.bottomAnchor, constant: -12),
             consoleTextView.leadingAnchor.constraint(equalTo: logContainer.contentView.leadingAnchor, constant: 15),
             consoleTextView.trailingAnchor.constraint(equalTo: logContainer.contentView.trailingAnchor, constant: -15),
-
-            logStealthButton.topAnchor.constraint(equalTo: logStealthPill.contentView.topAnchor, constant: 6),
-            logStealthButton.bottomAnchor.constraint(equalTo: logStealthPill.contentView.bottomAnchor, constant: -6),
-            logStealthButton.leadingAnchor.constraint(equalTo: logStealthPill.contentView.leadingAnchor, constant: 10),
-            logStealthButton.trailingAnchor.constraint(equalTo: logStealthPill.contentView.trailingAnchor, constant: -10),
 
             radarPulseView.widthAnchor.constraint(equalToConstant: 160),
             radarPulseView.heightAnchor.constraint(equalToConstant: 160),
@@ -658,20 +656,90 @@ final class ViewController: UIViewController, UITextViewDelegate, UIContextMenuI
         }
     }
 
-    private func updateStealthPillIcon() {
-        let name = isStealthModeEnabled ? "eye.fill" : "eye.slash.fill"
-        let cfg = UIImage.SymbolConfiguration(pointSize: 15, weight: .semibold)
-        logStealthButton.setImage(UIImage(systemName: name, withConfiguration: cfg), for: .normal)
-    }
-
-    @objc private func handleStealthPillTapped() {
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        if isStealthModeEnabled {
-            exitStealthMode()
-        } else {
-            enterStealthMode(withBroadcast: false)
+    @objc private func handleStealthPan(_ gesture: UIPanGestureRecognizer) {
+        if isStealthModeEnabled { return }
+        
+        let translation = gesture.translation(in: view)
+        let velocity = gesture.velocity(in: view)
+        let width = view.bounds.width
+        let height = view.bounds.height
+        
+        guard let overlay = stealthOverlayView else { return }
+        
+        switch gesture.state {
+        case .began:
+            overlay.layer.removeAllAnimations()
+            overlay.isHidden = false
+            overlay.alpha = 1.0
+            
+            if velocity.x < 0 {
+                panStartDirection = .left
+                overlay.frame = CGRect(x: width, y: 0, width: width, height: height)
+                lastStealthSwipeDirection = .left
+            } else {
+                panStartDirection = .right
+                overlay.frame = CGRect(x: -width, y: 0, width: width, height: height)
+                lastStealthSwipeDirection = .right
+            }
+            
+        case .changed:
+            guard let dir = panStartDirection else { return }
+            if dir == .left {
+                let newX = max(0, min(width, width + translation.x))
+                overlay.frame = CGRect(x: newX, y: 0, width: width, height: height)
+            } else {
+                let newX = min(0, max(-width, -width + translation.x))
+                overlay.frame = CGRect(x: newX, y: 0, width: width, height: height)
+            }
+            
+        case .ended, .cancelled:
+            guard let dir = panStartDirection else { return }
+            let threshold = width * 0.4
+            let shouldSnapShut: Bool
+            
+            if dir == .left {
+                shouldSnapShut = (-translation.x > threshold) || (velocity.x < -500)
+            } else {
+                shouldSnapShut = (translation.x > threshold) || (velocity.x > 500)
+            }
+            
+            if shouldSnapShut {
+                if !UserDefaults.standard.bool(forKey: hasSeenStealthModeAlertDefaultsKey) {
+                    UIView.animate(withDuration: 0.3, animations: {
+                        let startX = dir == .left ? width : -width
+                        overlay.frame = CGRect(x: startX, y: 0, width: width, height: height)
+                    }) { _ in
+                        overlay.isHidden = true
+                    }
+                    enterStealthMode(withBroadcast: true)
+                } else {
+                    isStealthModeEnabled = true
+                    setNeedsStatusBarAppearanceUpdate()
+                    setNeedsUpdateOfHomeIndicatorAutoHidden()
+                    setNeedsUpdateOfScreenEdgesDeferringSystemGestures()
+                    
+                    UIView.animate(withDuration: 0.35, delay: 0, usingSpringWithDamping: 0.82, initialSpringVelocity: 0.5, options: .curveEaseOut) {
+                        overlay.frame = CGRect(x: 0, y: 0, width: width, height: height)
+                    } completion: { _ in
+                        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+                        if !self.isBroadcasting {
+                            self.startBroadcasting()
+                        }
+                    }
+                }
+            } else {
+                UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseOut) {
+                    let startX = dir == .left ? width : -width
+                    overlay.frame = CGRect(x: startX, y: 0, width: width, height: height)
+                } completion: { _ in
+                    overlay.isHidden = true
+                }
+            }
+            panStartDirection = nil
+            
+        default:
+            panStartDirection = nil
         }
-        updateStealthPillIcon()
     }
 
     private func enterStealthMode(withBroadcast shouldBroadcast: Bool) {
@@ -697,7 +765,6 @@ final class ViewController: UIViewController, UITextViewDelegate, UIContextMenuI
         } else {
             executeEnterStealthMode(withBroadcast: shouldBroadcast)
         }
-        updateStealthPillIcon()
     }
 
     private func executeEnterStealthMode(withBroadcast shouldBroadcast: Bool) {
@@ -706,10 +773,24 @@ final class ViewController: UIViewController, UITextViewDelegate, UIContextMenuI
         setNeedsUpdateOfHomeIndicatorAutoHidden()
         setNeedsUpdateOfScreenEdgesDeferringSystemGestures()
 
-        stealthOverlayView?.isHidden = false
-        UIView.animate(withDuration: 0.25, delay: 0, options: .curveEaseInOut) {
-            self.stealthOverlayView?.alpha = 1.0
+        guard let overlay = stealthOverlayView else { return }
+        overlay.layer.removeAllAnimations()
+        overlay.isHidden = false
+        overlay.alpha = 1.0
+
+        let width = view.bounds.width
+        let height = view.bounds.height
+
+        if lastStealthSwipeDirection == .left {
+            overlay.frame = CGRect(x: width, y: 0, width: width, height: height)
+        } else {
+            overlay.frame = CGRect(x: -width, y: 0, width: width, height: height)
+        }
+
+        UIView.animate(withDuration: 0.45, delay: 0, usingSpringWithDamping: 0.85, initialSpringVelocity: 0.5, options: .curveEaseInOut) {
+            overlay.frame = CGRect(x: 0, y: 0, width: width, height: height)
         } completion: { _ in
+            UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
             if shouldBroadcast, !self.isBroadcasting {
                 self.startBroadcasting()
             }
@@ -718,15 +799,22 @@ final class ViewController: UIViewController, UITextViewDelegate, UIContextMenuI
 
     @objc private func exitStealthMode() {
         if !isStealthModeEnabled { return }
-        UIView.animate(withDuration: 0.25, delay: 0, options: .curveEaseInOut) {
-            self.stealthOverlayView?.alpha = 0.0
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+
+        guard let overlay = stealthOverlayView else { return }
+        let width = view.bounds.width
+        let height = view.bounds.height
+
+        let targetX = lastStealthSwipeDirection == .left ? width : -width
+
+        UIView.animate(withDuration: 0.4, delay: 0, usingSpringWithDamping: 0.85, initialSpringVelocity: 0.5, options: .curveEaseInOut) {
+            overlay.frame = CGRect(x: targetX, y: 0, width: width, height: height)
         } completion: { _ in
-            self.stealthOverlayView?.isHidden = true
+            overlay.isHidden = true
             self.isStealthModeEnabled = false
             self.setNeedsStatusBarAppearanceUpdate()
             self.setNeedsUpdateOfHomeIndicatorAutoHidden()
             self.setNeedsUpdateOfScreenEdgesDeferringSystemGestures()
-            self.updateStealthPillIcon()
         }
     }
 
@@ -1090,6 +1178,9 @@ final class ViewController: UIViewController, UITextViewDelegate, UIContextMenuI
             wVC.onDismiss = { [weak self] in
                 self?.startBroadcasting()
             }
+            wVC.onCancel = { [weak self] in
+                self?.stopBroadcasting()
+            }
             wVC.modalPresentationStyle = .pageSheet
             if #available(iOS 15.0, *) {
                 if let sheet = wVC.sheetPresentationController {
@@ -1191,6 +1282,9 @@ final class ViewController: UIViewController, UITextViewDelegate, UIContextMenuI
                 let wVC = AppleTVWarningViewController()
                 wVC.onDismiss = { [weak self] in
                     self?.startBroadcasting(withDuration: duration)
+                }
+                wVC.onCancel = { [weak self] in
+                    self?.stopBroadcasting()
                 }
                 wVC.modalPresentationStyle = .pageSheet
                 if #available(iOS 15.0, *) {
