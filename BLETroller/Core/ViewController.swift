@@ -27,6 +27,7 @@ private enum ObjCBridge {
 }
 final class StealthModeAlertViewController: UIViewController {
     var onDismiss: (() -> Void)?
+    var onCancel: (() -> Void)?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -39,9 +40,11 @@ final class StealthModeAlertViewController: UIViewController {
         stack.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(stack)
 
+        let themeColor = UIColor.systemBlue
+
         let symCfg = UIImage.SymbolConfiguration(pointSize: 72, weight: .semibold)
         let iconView = UIImageView(image: UIImage(systemName: "eye.slash.fill", withConfiguration: symCfg))
-        iconView.tintColor = .systemBlue
+        iconView.tintColor = themeColor
         stack.addArrangedSubview(iconView)
 
         let titleLabel = UILabel()
@@ -51,18 +54,26 @@ final class StealthModeAlertViewController: UIViewController {
         stack.addArrangedSubview(titleLabel)
 
         let msgLabel = UILabel()
-        msgLabel.text = "Hide your screen while broadcasting.\n\nTap with two fingers to exit."
+        msgLabel.text = "Hide your screen while broadcasting."
         msgLabel.font = .systemFont(ofSize: 18, weight: .medium)
         msgLabel.textColor = .secondaryLabel
         msgLabel.numberOfLines = 0
         msgLabel.textAlignment = .center
         stack.addArrangedSubview(msgLabel)
 
+        let exitLabel = UILabel()
+        exitLabel.text = "Tap with two fingers to exit."
+        exitLabel.font = .systemFont(ofSize: 18, weight: .bold)
+        exitLabel.textColor = .secondaryLabel
+        exitLabel.numberOfLines = 0
+        exitLabel.textAlignment = .center
+        stack.addArrangedSubview(exitLabel)
+
         var gotItCfg = UIButton.Configuration.filled()
         gotItCfg.title = "Got It"
         gotItCfg.cornerStyle = .large
         gotItCfg.buttonSize = .large
-        gotItCfg.baseBackgroundColor = .systemBlue
+        gotItCfg.baseBackgroundColor = themeColor
         gotItCfg.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
             var out = incoming
             out.font = .systemFont(ofSize: 18, weight: .bold)
@@ -74,19 +85,43 @@ final class StealthModeAlertViewController: UIViewController {
         gotItBtn.addTarget(self, action: #selector(dismissSelf), for: .touchUpInside)
         stack.addArrangedSubview(gotItBtn)
 
+        var cancelCfg = UIButton.Configuration.gray()
+        cancelCfg.title = "Go Back"
+        cancelCfg.cornerStyle = .large
+        cancelCfg.buttonSize = .large
+        cancelCfg.baseForegroundColor = .secondaryLabel
+        cancelCfg.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+            var out = incoming
+            out.font = .systemFont(ofSize: 18, weight: .bold)
+            return out
+        }
+
+        let cancelBtn = UIButton(type: .system)
+        cancelBtn.configuration = cancelCfg
+        cancelBtn.addTarget(self, action: #selector(cancelSelf), for: .touchUpInside)
+        stack.addArrangedSubview(cancelBtn)
+
         NSLayoutConstraint.activate([
             stack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             stack.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             stack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 32),
             stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -32),
             gotItBtn.widthAnchor.constraint(equalTo: stack.widthAnchor),
-            gotItBtn.heightAnchor.constraint(equalToConstant: 60)
+            gotItBtn.heightAnchor.constraint(equalToConstant: 60),
+            cancelBtn.widthAnchor.constraint(equalTo: stack.widthAnchor),
+            cancelBtn.heightAnchor.constraint(equalToConstant: 60)
         ])
     }
 
     @objc private func dismissSelf() {
         dismiss(animated: true) { [weak self] in
             self?.onDismiss?()
+        }
+    }
+
+    @objc private func cancelSelf() {
+        dismiss(animated: true) { [weak self] in
+            self?.onCancel?()
         }
     }
 }
@@ -449,6 +484,31 @@ final class ViewController: UIViewController, UITextViewDelegate, UIContextMenuI
         exitGesture.numberOfTouchesRequired = 2
         exitGesture.numberOfTapsRequired = 1
         overlay.addGestureRecognizer(exitGesture)
+
+        let leftLabel = UILabel()
+        leftLabel.text = "Pull to enter stealth mode"
+        leftLabel.textColor = .white.withAlphaComponent(0.4)
+        leftLabel.font = .systemFont(ofSize: 13, weight: .bold)
+        leftLabel.transform = CGAffineTransform(rotationAngle: -CGFloat.pi / 2)
+        leftLabel.translatesAutoresizingMaskIntoConstraints = false
+        overlay.addSubview(leftLabel)
+
+        let rightLabel = UILabel()
+        rightLabel.text = "Pull to enter stealth mode"
+        rightLabel.textColor = .white.withAlphaComponent(0.4)
+        rightLabel.font = .systemFont(ofSize: 13, weight: .bold)
+        rightLabel.transform = CGAffineTransform(rotationAngle: CGFloat.pi / 2)
+        rightLabel.translatesAutoresizingMaskIntoConstraints = false
+        overlay.addSubview(rightLabel)
+
+        NSLayoutConstraint.activate([
+            leftLabel.centerYAnchor.constraint(equalTo: overlay.centerYAnchor),
+            leftLabel.leadingAnchor.constraint(equalTo: overlay.leadingAnchor, constant: 15),
+            
+            rightLabel.centerYAnchor.constraint(equalTo: overlay.centerYAnchor),
+            rightLabel.trailingAnchor.constraint(equalTo: overlay.trailingAnchor, constant: -15)
+        ])
+
         view.addSubview(overlay)
         stealthOverlayView = overlay
 
@@ -752,6 +812,8 @@ final class ViewController: UIViewController, UITextViewDelegate, UIContextMenuI
                 UserDefaults.standard.set(true, forKey: self.hasSeenStealthModeAlertDefaultsKey)
                 UserDefaults.standard.synchronize()
                 self.executeEnterStealthMode(withBroadcast: shouldBroadcast)
+            }
+            alertVC.onCancel = {
             }
             alertVC.modalPresentationStyle = .pageSheet
             if #available(iOS 15.0, *) {
