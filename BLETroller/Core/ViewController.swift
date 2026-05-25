@@ -25,7 +25,6 @@ private enum ObjCBridge {
         }
     }
 }
-
 final class StealthModeAlertViewController: UIViewController {
     var onDismiss: (() -> Void)?
 
@@ -33,95 +32,59 @@ final class StealthModeAlertViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
 
-        let screenHeight = UIScreen.main.bounds.size.height
-
         let stack = UIStackView()
         stack.axis = .vertical
         stack.alignment = .center
-        stack.spacing = (screenHeight < 700.0 ? 12.0 : 16.0)
+        stack.spacing = 24
         stack.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(stack)
 
-        let iconSize = screenHeight < 700.0 ? 48.0 : 62.0
-        let symCfg = UIImage.SymbolConfiguration(pointSize: iconSize, weight: .medium)
+        let symCfg = UIImage.SymbolConfiguration(pointSize: 72, weight: .semibold)
         let iconView = UIImageView(image: UIImage(systemName: "eye.slash.fill", withConfiguration: symCfg))
         iconView.tintColor = .systemBlue
         stack.addArrangedSubview(iconView)
 
         let titleLabel = UILabel()
         titleLabel.text = "Stealth Mode"
-        let titleSize = screenHeight < 700.0 ? 24.0 : 28.0
-        titleLabel.font = UIFontMetrics.default.scaledFont(for: UIFont.systemFont(ofSize: titleSize, weight: .bold))
-        titleLabel.adjustsFontForContentSizeCategory = true
-        titleLabel.numberOfLines = 1
-        titleLabel.adjustsFontSizeToFitWidth = true
-        titleLabel.minimumScaleFactor = 0.75
+        titleLabel.font = .systemFont(ofSize: 32, weight: .heavy)
         titleLabel.textColor = .label
         stack.addArrangedSubview(titleLabel)
 
         let msgLabel = UILabel()
-        let fullText = "Hide your screen while broadcasting.\n\nTap with three fingers to exit."
-        msgLabel.text = fullText
-        msgLabel.font = UIFontMetrics.default.scaledFont(for: UIFont.systemFont(ofSize: 16, weight: .regular))
-        msgLabel.adjustsFontForContentSizeCategory = true
+        msgLabel.text = "Hide your screen while broadcasting.\n\nTap with two fingers to exit."
+        msgLabel.font = .systemFont(ofSize: 18, weight: .medium)
         msgLabel.textColor = .secondaryLabel
         msgLabel.numberOfLines = 0
         msgLabel.textAlignment = .center
         stack.addArrangedSubview(msgLabel)
 
-        stack.setCustomSpacing((screenHeight < 700.0 ? 16.0 : 24.0), after: msgLabel)
-
-        let btnStack = UIStackView()
-        btnStack.axis = .vertical
-        btnStack.spacing = 12
-        btnStack.distribution = .fill
-        stack.addArrangedSubview(btnStack)
-        btnStack.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
-
         var gotItCfg = UIButton.Configuration.filled()
         gotItCfg.title = "Got It"
         gotItCfg.cornerStyle = .large
         gotItCfg.buttonSize = .large
-        gotItCfg.baseBackgroundColor = .systemGray
-        let buttonInsetY = screenHeight < 700.0 ? 12.0 : 16.0
-        gotItCfg.contentInsets = NSDirectionalEdgeInsets(top: buttonInsetY, leading: 0, bottom: buttonInsetY, trailing: 0)
+        gotItCfg.baseBackgroundColor = .systemBlue
         gotItCfg.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
             var out = incoming
-            let btnTitleSize = screenHeight < 700.0 ? 18.0 : 20.0
-            out.font = UIFontMetrics.default.scaledFont(for: UIFont.systemFont(ofSize: btnTitleSize, weight: .bold))
+            out.font = .systemFont(ofSize: 18, weight: .bold)
             return out
         }
 
         let gotItBtn = UIButton(type: .system)
         gotItBtn.configuration = gotItCfg
-        gotItBtn.isEnabled = false
-        gotItBtn.addTarget(self, action: #selector(gotItTapped), for: .touchUpInside)
-        btnStack.addArrangedSubview(gotItBtn)
-        gotItBtn.heightAnchor.constraint(greaterThanOrEqualToConstant: 52.0).isActive = true
+        gotItBtn.addTarget(self, action: #selector(dismissSelf), for: .touchUpInside)
+        stack.addArrangedSubview(gotItBtn)
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak gotItBtn] in
-            guard let gotItBtn else { return }
-            gotItBtn.isEnabled = true
-            var enabledCfg = gotItBtn.configuration
-            enabledCfg?.baseBackgroundColor = .systemBlue
-            UIView.transition(with: gotItBtn, duration: 0.28, options: .transitionCrossDissolve) {
-                gotItBtn.configuration = enabledCfg
-            }
-        }
-
-        let centerY = stack.centerYAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerYAnchor)
-        centerY.priority = .defaultLow
         NSLayoutConstraint.activate([
-            centerY,
+            stack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            stack.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             stack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 32),
             stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -32),
-            stack.topAnchor.constraint(greaterThanOrEqualTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
-            stack.bottomAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
+            gotItBtn.widthAnchor.constraint(equalTo: stack.widthAnchor),
+            gotItBtn.heightAnchor.constraint(equalToConstant: 60)
         ])
     }
 
-    @objc private func gotItTapped() {
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    @objc private func dismissSelf() {
         dismiss(animated: true) { [weak self] in
             self?.onDismiss?()
         }
@@ -129,114 +92,72 @@ final class StealthModeAlertViewController: UIViewController {
 }
 
 final class AppleTVWarningViewController: UIViewController {
-    var onContinue: (() -> Void)?
-    var onCancel: (() -> Void)?
+    var onDismiss: (() -> Void)?
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
 
-        let screenHeight = UIScreen.main.bounds.size.height
-
         let stack = UIStackView()
         stack.axis = .vertical
         stack.alignment = .center
-        stack.spacing = (screenHeight < 700.0 ? 12.0 : 16.0)
+        stack.spacing = 24
         stack.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(stack)
 
-        let iconSize = screenHeight < 700.0 ? 48.0 : 62.0
-        let symCfg = UIImage.SymbolConfiguration(pointSize: iconSize, weight: .medium)
+        let warningColor = UIColor.systemRed
+
+        let symCfg = UIImage.SymbolConfiguration(pointSize: 72, weight: .semibold)
         let iconView = UIImageView(image: UIImage(systemName: "exclamationmark.triangle.fill", withConfiguration: symCfg))
-        iconView.tintColor = .systemOrange
+        iconView.tintColor = warningColor
         stack.addArrangedSubview(iconView)
 
         let titleLabel = UILabel()
         titleLabel.text = "Privacy Warning"
-        let titleSize = screenHeight < 700.0 ? 24.0 : 28.0
-        titleLabel.font = UIFontMetrics.default.scaledFont(for: UIFont.systemFont(ofSize: titleSize, weight: .bold))
-        titleLabel.adjustsFontForContentSizeCategory = true
-        titleLabel.numberOfLines = 1
-        titleLabel.adjustsFontSizeToFitWidth = true
-        titleLabel.minimumScaleFactor = 0.75
+        titleLabel.font = .systemFont(ofSize: 32, weight: .heavy)
         titleLabel.textColor = .label
         stack.addArrangedSubview(titleLabel)
 
         let msgLabel = UILabel()
-        msgLabel.text = "Apple TV payloads MAY show nearby device names.\n\nContinue?"
-        msgLabel.font = UIFontMetrics.default.scaledFont(for: UIFont.systemFont(ofSize: 16, weight: .regular))
-        msgLabel.adjustsFontForContentSizeCategory = true
+        msgLabel.text = "Your device name \"\(UIDevice.current.name)\" may be shown to others nearby."
+        msgLabel.font = .systemFont(ofSize: 18, weight: .medium)
         msgLabel.textColor = .secondaryLabel
         msgLabel.numberOfLines = 0
         msgLabel.textAlignment = .center
         stack.addArrangedSubview(msgLabel)
 
-        stack.setCustomSpacing((screenHeight < 700.0 ? 16.0 : 24.0), after: msgLabel)
-
-        let btnStack = UIStackView()
-        btnStack.axis = .vertical
-        btnStack.spacing = 12
-        btnStack.distribution = .fill
-        stack.addArrangedSubview(btnStack)
-        btnStack.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
-
-        let buttonInsetY = screenHeight < 700.0 ? 12.0 : 16.0
-
-        var continueCfg = UIButton.Configuration.filled()
-        continueCfg.title = "Continue"
-        continueCfg.cornerStyle = .large
-        continueCfg.buttonSize = .large
-        continueCfg.baseBackgroundColor = .systemOrange
-        continueCfg.contentInsets = NSDirectionalEdgeInsets(top: buttonInsetY, leading: 0, bottom: buttonInsetY, trailing: 0)
-        continueCfg.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+        var gotItCfg = UIButton.Configuration.filled()
+        gotItCfg.title = "Got It"
+        gotItCfg.cornerStyle = .large
+        gotItCfg.buttonSize = .large
+        gotItCfg.baseBackgroundColor = warningColor
+        gotItCfg.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
             var out = incoming
-            let btnTitleSize = screenHeight < 700.0 ? 18.0 : 20.0
-            out.font = UIFontMetrics.default.scaledFont(for: UIFont.systemFont(ofSize: btnTitleSize, weight: .bold))
+            out.font = .systemFont(ofSize: 18, weight: .bold)
             return out
         }
 
-        let continueBtn = UIButton(type: .system)
-        continueBtn.configuration = continueCfg
-        continueBtn.addTarget(self, action: #selector(continueTapped), for: .touchUpInside)
-        btnStack.addArrangedSubview(continueBtn)
-        continueBtn.heightAnchor.constraint(greaterThanOrEqualToConstant: 52.0).isActive = true
+        let gotItBtn = UIButton(type: .system)
+        gotItBtn.configuration = gotItCfg
+        gotItBtn.addTarget(self, action: #selector(dismissSelf), for: .touchUpInside)
+        stack.addArrangedSubview(gotItBtn)
 
-        var cancelCfg = UIButton.Configuration.filled()
-        cancelCfg.title = "Cancel"
-        cancelCfg.cornerStyle = .large
-        cancelCfg.buttonSize = .large
-        cancelCfg.baseBackgroundColor = .systemGray
-        cancelCfg.contentInsets = NSDirectionalEdgeInsets(top: buttonInsetY, leading: 0, bottom: buttonInsetY, trailing: 0)
-        cancelCfg.titleTextAttributesTransformer = continueCfg.titleTextAttributesTransformer
-
-        let cancelBtn = UIButton(type: .system)
-        cancelBtn.configuration = cancelCfg
-        cancelBtn.addTarget(self, action: #selector(cancelTapped), for: .touchUpInside)
-        btnStack.addArrangedSubview(cancelBtn)
-        cancelBtn.heightAnchor.constraint(greaterThanOrEqualToConstant: 52.0).isActive = true
-
-        let centerY = stack.centerYAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerYAnchor)
-        centerY.priority = .defaultLow
         NSLayoutConstraint.activate([
-            centerY,
+            stack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            stack.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             stack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 32),
             stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -32),
-            stack.topAnchor.constraint(greaterThanOrEqualTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
-            stack.bottomAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
+            gotItBtn.widthAnchor.constraint(equalTo: stack.widthAnchor),
+            gotItBtn.heightAnchor.constraint(equalToConstant: 60)
         ])
     }
 
-    @objc private func continueTapped() {
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        dismiss(animated: true) { [weak self] in self?.onContinue?() }
-    }
-
-    @objc private func cancelTapped() {
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        dismiss(animated: true) { [weak self] in self?.onCancel?() }
+    @objc private func dismissSelf() {
+        dismiss(animated: true) { [weak self] in
+            self?.onDismiss?()
+        }
     }
 }
-
 final class ViewController: UIViewController, UITextViewDelegate, UIContextMenuInteractionDelegate, CBCentralManagerDelegate {
     private var activeAdvertiser: AnyObject?
     private var centralManager: CBCentralManager?
@@ -261,14 +182,14 @@ final class ViewController: UIViewController, UITextViewDelegate, UIContextMenuI
     private var isStealthModeEnabled = false
     private var currentBroadcastDuration: TimeInterval = 0
     private var isDiscoveryLoggingEnabled = false
-    private let logToggleStack = UIStackView()
-    private let discoveryLogSwitch = UISwitch()
+    private let radarIndicatorDot = UIView()
+    private let radarStatusLabel = UILabel()
+    private let radarPillButton = UIButton(type: .custom)
     private let logTogglePill = UIVisualEffectView(effect: UIBlurEffect(style: .systemMaterial))
-    private let scannerLabel = UILabel()
     private let logStealthPill = UIVisualEffectView(effect: UIBlurEffect(style: .systemMaterial))
     private let logStealthButton = UIButton(type: .system)
-    private var logToggleStackLeadingConstraint: NSLayoutConstraint?
-    private var logToggleStackTrailingConstraint: NSLayoutConstraint?
+    private var radarPillStackLeadingConstraint: NSLayoutConstraint?
+    private var radarPillStackTrailingConstraint: NSLayoutConstraint?
     private var scannerPillCollapseTimer: Timer?
     private var isScannerPillCollapsed = false
     private var hasShownScannerPillHint = false
@@ -393,38 +314,38 @@ final class ViewController: UIViewController, UITextViewDelegate, UIContextMenuI
         logTogglePill.contentView.backgroundColor = UIColor.tertiarySystemFill.withAlphaComponent(0.15)
         logContainer.contentView.addSubview(logTogglePill)
 
-        logToggleStack.axis = .horizontal
-        logToggleStack.spacing = 6
-        logToggleStack.alignment = .center
-        logToggleStack.translatesAutoresizingMaskIntoConstraints = false
-        logTogglePill.contentView.addSubview(logToggleStack)
+        radarPillButton.translatesAutoresizingMaskIntoConstraints = false
+        radarPillButton.addTarget(self, action: #selector(toggleDiscoveryLogging), for: .touchUpInside)
+        logTogglePill.contentView.addSubview(radarPillButton)
 
-        scannerLabel.text = "BT Radar"
-        scannerLabel.font = UIFontMetrics.default.scaledFont(for: UIFont.systemFont(ofSize: 13, weight: .bold))
-        scannerLabel.adjustsFontForContentSizeCategory = true
-        scannerLabel.textColor = .secondaryLabel
-        logToggleStack.addArrangedSubview(scannerLabel)
+        let pillStack = UIStackView()
+        pillStack.axis = .horizontal
+        pillStack.spacing = 8
+        pillStack.alignment = .center
+        pillStack.isUserInteractionEnabled = false
+        pillStack.translatesAutoresizingMaskIntoConstraints = false
+        radarPillButton.addSubview(pillStack)
 
-        discoveryLogSwitch.isOn = false
-        discoveryLogSwitch.onTintColor = view.tintColor
-        let switchScale: CGFloat = 0.7
-        discoveryLogSwitch.transform = CGAffineTransform(scaleX: switchScale, y: switchScale)
-        discoveryLogSwitch.addTarget(self, action: #selector(toggleDiscoveryLogging), for: .valueChanged)
+        radarIndicatorDot.backgroundColor = .secondaryLabel.withAlphaComponent(0.6)
+        radarIndicatorDot.layer.cornerRadius = 4
+        radarIndicatorDot.translatesAutoresizingMaskIntoConstraints = false
+        pillStack.addArrangedSubview(radarIndicatorDot)
 
-        let switchContainer = UIView()
-        switchContainer.translatesAutoresizingMaskIntoConstraints = false
-        switchContainer.addSubview(discoveryLogSwitch)
-        discoveryLogSwitch.translatesAutoresizingMaskIntoConstraints = false
-        let swSize = discoveryLogSwitch.intrinsicContentSize
-        let w = ceil(swSize.width * switchScale)
-        let h = ceil(swSize.height * switchScale)
+        radarStatusLabel.text = "Radar: Off"
+        radarStatusLabel.font = UIFontMetrics.default.scaledFont(for: UIFont.systemFont(ofSize: 12, weight: .black))
+        radarStatusLabel.adjustsFontForContentSizeCategory = true
+        radarStatusLabel.textColor = .secondaryLabel
+        pillStack.addArrangedSubview(radarStatusLabel)
+
         NSLayoutConstraint.activate([
-            switchContainer.widthAnchor.constraint(equalToConstant: w),
-            switchContainer.heightAnchor.constraint(equalToConstant: h),
-            discoveryLogSwitch.centerXAnchor.constraint(equalTo: switchContainer.centerXAnchor),
-            discoveryLogSwitch.centerYAnchor.constraint(equalTo: switchContainer.centerYAnchor),
+            radarPillButton.leadingAnchor.constraint(equalTo: logTogglePill.contentView.leadingAnchor),
+            radarPillButton.trailingAnchor.constraint(equalTo: logTogglePill.contentView.trailingAnchor),
+            radarPillButton.topAnchor.constraint(equalTo: logTogglePill.contentView.topAnchor),
+            radarPillButton.bottomAnchor.constraint(equalTo: logTogglePill.contentView.bottomAnchor),
+
+            radarIndicatorDot.widthAnchor.constraint(equalToConstant: 8),
+            radarIndicatorDot.heightAnchor.constraint(equalToConstant: 8),
         ])
-        logToggleStack.addArrangedSubview(switchContainer)
 
         logContainer.contentView.bringSubviewToFront(logTogglePill)
 
@@ -519,14 +440,14 @@ final class ViewController: UIViewController, UITextViewDelegate, UIContextMenuI
         overlay.isHidden = true
         overlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         let exitGesture = UITapGestureRecognizer(target: self, action: #selector(exitStealthMode))
-        exitGesture.numberOfTouchesRequired = 3
+        exitGesture.numberOfTouchesRequired = 2
         exitGesture.numberOfTapsRequired = 1
         overlay.addGestureRecognizer(exitGesture)
         view.addSubview(overlay)
         stealthOverlayView = overlay
 
         let resetGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleSecretReset(_:)))
-        resetGesture.numberOfTouchesRequired = 3
+        resetGesture.numberOfTouchesRequired = 2
         resetGesture.minimumPressDuration = 2.0
         view.addGestureRecognizer(resetGesture)
     }
@@ -539,17 +460,17 @@ final class ViewController: UIViewController, UITextViewDelegate, UIContextMenuI
             view.addLayoutGuide(landscapeTitleGuide)
         }
 
-        let leading = logToggleStack.leadingAnchor.constraint(equalTo: logTogglePill.contentView.leadingAnchor, constant: 10)
-        let trailing = logToggleStack.trailingAnchor.constraint(equalTo: logTogglePill.contentView.trailingAnchor, constant: -10)
-        logToggleStackLeadingConstraint = leading
-        logToggleStackTrailingConstraint = trailing
+        let leading = radarPillButton.subviews.first!.leadingAnchor.constraint(equalTo: radarPillButton.leadingAnchor, constant: 14)
+        let trailing = radarPillButton.subviews.first!.trailingAnchor.constraint(equalTo: radarPillButton.trailingAnchor, constant: -14)
+        radarPillStackLeadingConstraint = leading
+        radarPillStackTrailingConstraint = trailing
 
         NSLayoutConstraint.activate([
-            logTogglePill.topAnchor.constraint(equalTo: logContainer.contentView.topAnchor, constant: 10),
-            logTogglePill.trailingAnchor.constraint(equalTo: logContainer.contentView.trailingAnchor, constant: -10),
+            logTogglePill.leadingAnchor.constraint(equalTo: logContainer.contentView.leadingAnchor, constant: 10),
+            logTogglePill.bottomAnchor.constraint(equalTo: logContainer.contentView.bottomAnchor, constant: -10),
 
-            logToggleStack.topAnchor.constraint(equalTo: logTogglePill.contentView.topAnchor, constant: 6),
-            logToggleStack.bottomAnchor.constraint(equalTo: logTogglePill.contentView.bottomAnchor, constant: -6),
+            radarPillButton.subviews.first!.topAnchor.constraint(equalTo: radarPillButton.topAnchor, constant: 6),
+            radarPillButton.subviews.first!.bottomAnchor.constraint(equalTo: radarPillButton.bottomAnchor, constant: -6),
             leading,
             trailing,
 
@@ -759,27 +680,19 @@ final class ViewController: UIViewController, UITextViewDelegate, UIContextMenuI
         if !UserDefaults.standard.bool(forKey: hasSeenStealthModeAlertDefaultsKey) {
             let alertVC = StealthModeAlertViewController()
             alertVC.onDismiss = { [weak self] in
-                guard let self else { return }
+                guard let self = self else { return }
                 UserDefaults.standard.set(true, forKey: self.hasSeenStealthModeAlertDefaultsKey)
                 UserDefaults.standard.synchronize()
                 self.executeEnterStealthMode(withBroadcast: shouldBroadcast)
             }
-
+            alertVC.modalPresentationStyle = .pageSheet
             if #available(iOS 15.0, *) {
-                alertVC.modalPresentationStyle = .pageSheet
                 if let sheet = alertVC.sheetPresentationController {
-                    let screenHeight = UIScreen.main.bounds.size.height
-                    sheet.detents = [.medium(), .large()]
+                    sheet.detents = [.large()]
                     sheet.prefersGrabberVisible = true
-                    sheet.preferredCornerRadius = 32.0
-                    if screenHeight < 700.0 {
-                        sheet.selectedDetentIdentifier = .large
-                    }
+                    sheet.preferredCornerRadius = 24.0
                 }
-            } else {
-                alertVC.modalPresentationStyle = .formSheet
             }
-
             present(alertVC, animated: true)
         } else {
             executeEnterStealthMode(withBroadcast: shouldBroadcast)
@@ -1056,13 +969,13 @@ final class ViewController: UIViewController, UITextViewDelegate, UIContextMenuI
         if isScannerPillCollapsed == collapsed { return }
         isScannerPillCollapsed = collapsed
 
-        let leadingInset: CGFloat = collapsed ? 8.0 : 10.0
-        logToggleStackLeadingConstraint?.constant = leadingInset
-        logToggleStackTrailingConstraint?.constant = -10.0
-        logToggleStack.spacing = collapsed ? 0.0 : 6.0
+        let leadingInset: CGFloat = collapsed ? 10.0 : 14.0
+        let trailingInset: CGFloat = collapsed ? -10.0 : -14.0
+        radarPillStackLeadingConstraint?.constant = leadingInset
+        radarPillStackTrailingConstraint?.constant = trailingInset
 
         let changes = {
-            self.scannerLabel.isHidden = collapsed
+            self.radarStatusLabel.isHidden = collapsed
             self.view.layoutIfNeeded()
         }
 
@@ -1174,8 +1087,17 @@ final class ViewController: UIViewController, UITextViewDelegate, UIContextMenuI
 
         if isAppleTVConnectingTarget(selectedDevice) {
             let wVC = AppleTVWarningViewController()
-            wVC.onContinue = { [weak self] in self?.startBroadcasting() }
-            wVC.onCancel = { [weak self] in self?.stopBroadcasting() }
+            wVC.onDismiss = { [weak self] in
+                self?.startBroadcasting()
+            }
+            wVC.modalPresentationStyle = .pageSheet
+            if #available(iOS 15.0, *) {
+                if let sheet = wVC.sheetPresentationController {
+                    sheet.detents = [.large()]
+                    sheet.prefersGrabberVisible = true
+                    sheet.preferredCornerRadius = 24.0
+                }
+            }
             present(wVC, animated: true)
             return
         }
@@ -1184,8 +1106,30 @@ final class ViewController: UIViewController, UITextViewDelegate, UIContextMenuI
     }
 
     @objc private func toggleDiscoveryLogging() {
-        isDiscoveryLoggingEnabled = discoveryLogSwitch.isOn
+        isDiscoveryLoggingEnabled = !isDiscoveryLoggingEnabled
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        
         revealScannerPill(forDuration: 1.6)
+        
+        UIView.animate(withDuration: 0.25, delay: 0, options: .curveEaseInOut) {
+            if self.isDiscoveryLoggingEnabled {
+                self.radarIndicatorDot.backgroundColor = self.view.tintColor
+                self.radarIndicatorDot.layer.shadowColor = self.view.tintColor.cgColor
+                self.radarIndicatorDot.layer.shadowRadius = 4
+                self.radarIndicatorDot.layer.shadowOpacity = 1.0
+                self.radarIndicatorDot.layer.shadowOffset = .zero
+                self.radarStatusLabel.text = "Radar: On"
+                self.radarStatusLabel.textColor = self.view.tintColor
+                self.logTogglePill.contentView.backgroundColor = self.view.tintColor.withAlphaComponent(0.12)
+            } else {
+                self.radarIndicatorDot.backgroundColor = .secondaryLabel.withAlphaComponent(0.6)
+                self.radarIndicatorDot.layer.shadowOpacity = 0
+                self.radarStatusLabel.text = "Radar: Off"
+                self.radarStatusLabel.textColor = .secondaryLabel
+                self.logTogglePill.contentView.backgroundColor = UIColor.tertiarySystemFill.withAlphaComponent(0.15)
+            }
+        }
+        
         if isDiscoveryLoggingEnabled {
             logToConsole("Nearby Bluetooth devices will appear in the log.", category: 4)
             guard let centralManager else { return }
@@ -1245,8 +1189,17 @@ final class ViewController: UIViewController, UITextViewDelegate, UIContextMenuI
         if wasBroadcasting {
             if isAppleTVConnectingTarget(dict) {
                 let wVC = AppleTVWarningViewController()
-                wVC.onContinue = { [weak self] in self?.startBroadcasting(withDuration: duration) }
-                wVC.onCancel = { [weak self] in self?.stopBroadcasting() }
+                wVC.onDismiss = { [weak self] in
+                    self?.startBroadcasting(withDuration: duration)
+                }
+                wVC.modalPresentationStyle = .pageSheet
+                if #available(iOS 15.0, *) {
+                    if let sheet = wVC.sheetPresentationController {
+                        sheet.detents = [.large()]
+                        sheet.prefersGrabberVisible = true
+                        sheet.preferredCornerRadius = 24.0
+                    }
+                }
                 present(wVC, animated: true)
             } else {
                 startBroadcasting(withDuration: duration)
