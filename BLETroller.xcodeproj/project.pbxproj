@@ -14,9 +14,9 @@
 		C0132A862F8EE93800D4D505  = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				App/Info.plist,
 				Assets.xcassets,
 				BLETrollerIcon.icon,
-				App/Info.plist,
 			);
 			target = C0132A6E2F8EE92C00D4D505 ;
 		};
