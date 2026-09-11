@@ -37,7 +37,7 @@ to do: ~~fix container access,~~ fix other payloads, add payloads for other OSes
 
 <p align="center">
   <a href="https://github.com/shalamand3r/BLETroller/releases">
-    <img src="https://img.shields.io/github/downloads/shalamand3r/LiveSafariReborn/total?style=plastic&logo=github&label=Downloads&color=7aaada">
+    <img src="https://img.shields.io/github/downloads/shalamand3r/BLETroller/total?style=plastic&logo=github&label=Downloads&color=7aaada">
   </a>
 </p>
 
